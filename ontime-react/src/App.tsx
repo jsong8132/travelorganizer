@@ -1,17 +1,7 @@
 import { useState, useEffect } from 'react'
-import { RefreshCw, Radio } from 'lucide-react'
-
-// ==============================================
-// TYPES - Define the shape of our data
-// ==============================================
-
-interface TramDeparture {
-  id: string
-  routeNumber: string
-  destination: string
-  minutesAway: number
-  isRealTime: boolean
-}
+import { RefreshCw, Radio, Settings, Plus, Minus, X } from 'lucide-react'
+import { TramDeparture, AppSettings, defaultSettings } from './types'
+import { useLocalStorage } from './hooks/useLocalStorage'
 
 // ==============================================
 // MOCK DATA - Replace with real API later
@@ -36,6 +26,19 @@ function App() {
   const [departures, setDepartures] = useState<TramDeparture[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [showSettings, setShowSettings] = useState(false)
+  const [settings, setSettings] = useLocalStorage<AppSettings>('ontime-settings', defaultSettings)
+
+  // Update clock every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(timer)
+  }, [])
 
   // Load departures when app starts
   useEffect(() => {
@@ -66,14 +69,86 @@ function App() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800">🚊 OnTime</h1>
-          <button
-            onClick={loadDepartures}
-            disabled={isLoading}
-            className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Current time */}
+            <span className="text-lg font-mono font-semibold text-gray-700">
+              {currentTime.toLocaleTimeString()}
+            </span>
+            <button
+              onClick={loadDepartures}
+              disabled={isLoading}
+              className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className={`p-2 rounded-full hover:bg-gray-200 ${showSettings ? 'bg-gray-200' : ''}`}
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-800">Settings</h3>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="p-1 rounded hover:bg-gray-100"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Use mock data toggle */}
+            <div className="flex items-center justify-between py-3 border-b border-gray-100">
+              <span className="text-gray-700">Use mock data</span>
+              <button
+                onClick={() => setSettings({ ...settings, useMockData: !settings.useMockData })}
+                className={`w-12 h-6 rounded-full transition-colors ${
+                  settings.useMockData ? 'bg-green-500' : 'bg-gray-300'
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
+                    settings.useMockData ? 'translate-x-6' : 'translate-x-0.5'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Early arrival minutes */}
+            <div className="flex items-center justify-between py-3">
+              <span className="text-gray-700">Arrive early by</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSettings({ 
+                    ...settings, 
+                    earlyArrivalMinutes: Math.max(0, settings.earlyArrivalMinutes - 1) 
+                  })}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="w-16 text-center font-semibold">
+                  {settings.earlyArrivalMinutes} min
+                </span>
+                <button
+                  onClick={() => setSettings({ 
+                    ...settings, 
+                    earlyArrivalMinutes: settings.earlyArrivalMinutes + 1 
+                  })}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stop name - TODO: Make this dynamic */}
         <div className="mb-4">
@@ -115,6 +190,13 @@ function App() {
 // ==============================================
 
 function TramRow({ departure }: { departure: TramDeparture }) {
+  // Determine color based on minutes away
+  const getTimeColor = (minutes: number): string => {
+    if (minutes <= 2) return 'text-red-600'
+    if (minutes <= 5) return 'text-orange-500'
+    return 'text-green-600'
+  }
+
   return (
     <li className="flex items-center p-4 hover:bg-gray-50">
       {/* Route number badge */}
@@ -132,9 +214,9 @@ function TramRow({ departure }: { departure: TramDeparture }) {
         )}
       </div>
 
-      {/* Time */}
+      {/* Time - color coded by urgency */}
       <div className="text-right">
-        <p className="text-lg font-bold text-gray-800">
+        <p className={`text-lg font-bold ${getTimeColor(departure.minutesAway)}`}>
           {departure.minutesAway === 0 ? 'Now' : `${departure.minutesAway} min`}
         </p>
       </div>
