@@ -81,3 +81,23 @@ export function sortStopsByDistance(
     .sort((a, b) => a.distance - b.distance)
 }
 
+/**
+ * Get all stops within a given radius
+ * @param radiusMeters - Radius in meters (default 500m)
+ * @returns Array of stops with distances, sorted by distance
+ */
+export function getStopsWithinRadius(
+  userLat: number,
+  userLng: number,
+  stops: TramStop[],
+  radiusMeters: number = 500
+): Array<{ stop: TramStop; distance: number }> {
+  return stops
+    .map(stop => ({
+      stop,
+      distance: haversineDistance(userLat, userLng, stop.latitude, stop.longitude),
+    }))
+    .filter(item => item.distance <= radiusMeters)
+    .sort((a, b) => a.distance - b.distance)
+}
+

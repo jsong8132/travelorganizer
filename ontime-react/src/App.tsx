@@ -5,6 +5,7 @@ import { useLocalStorage } from './hooks/useLocalStorage'
 import { useGeolocation } from './hooks/useGeolocation'
 import { melbourneTramStops, defaultStop } from './data/tramStops'
 import { findNearestStop, formatDistance } from './utils/geo'
+import { MapPopup } from './components/MapPopup'
 
 // ==============================================
 // MOCK DATA - Replace with real API later
@@ -36,6 +37,7 @@ function App() {
   const geolocation = useGeolocation()
   const [currentStop, setCurrentStop] = useState<TramStop>(defaultStop)
   const [stopDistance, setStopDistance] = useState<number | null>(null)
+  const [showMap, setShowMap] = useState(false)
 
   // Update clock every second
   useEffect(() => {
@@ -71,6 +73,14 @@ function App() {
     setDepartures(getMockDepartures())
     setLastUpdated(new Date())
     setIsLoading(false)
+  }
+
+  // Handle map toggle - get location first if not available
+  const handleMapToggle = () => {
+    if (!geolocation.hasLocation) {
+      geolocation.getLocation()
+    }
+    setShowMap(!showMap)
   }
 
   return (
@@ -211,16 +221,16 @@ function App() {
               </div>
             </div>
             
-            {/* Locate button */}
+            {/* Map toggle button */}
             <button
-              onClick={geolocation.getLocation}
+              onClick={handleMapToggle}
               disabled={geolocation.isLoading}
               className={`p-2.5 rounded-xl transition-all focus-ring ${
-                geolocation.hasLocation
+                showMap || geolocation.hasLocation
                   ? 'bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-sm'
                   : 'border border-stone-200 hover:bg-stone-50 hover:border-stone-300 text-stone-600'
               }`}
-              title="Find nearest stop"
+              title="Show map with nearby stops"
             >
               {geolocation.isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -271,6 +281,15 @@ function App() {
         </p>
 
       </div>
+
+      {/* Map Popup */}
+      {showMap && geolocation.hasLocation && geolocation.latitude && geolocation.longitude && (
+        <MapPopup
+          userLat={geolocation.latitude}
+          userLng={geolocation.longitude}
+          onClose={() => setShowMap(false)}
+        />
+      )}
     </div>
   )
 }

@@ -73,11 +73,11 @@ export function useGeolocation() {
           isLoading: false,
         }))
       },
-      // Options
+      // Options - lower accuracy for faster response
       {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000, // Cache for 1 minute
+        enableHighAccuracy: false,
+        timeout: 30000, // 30 seconds timeout
+        maximumAge: 300000, // Cache for 5 minutes
       }
     )
   }, [])
