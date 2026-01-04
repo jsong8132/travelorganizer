@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { RefreshCw, Radio, Settings, Plus, Minus, X, Clock, MapPin, Navigation, Loader2, AlertCircle } from 'lucide-react'
+import { RefreshCw, Radio, Settings, Plus, Minus, X, Clock, MapPin, Loader2, AlertCircle } from 'lucide-react'
 import { TramDeparture, TramStop, AppSettings, defaultSettings } from './types'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useGeolocation } from './hooks/useGeolocation'
@@ -202,9 +202,23 @@ function App() {
         {/* Stop Info Card with Location */}
         <div className="bg-white/80 backdrop-blur-sm border border-stone-200 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-100 to-sky-100 flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-pink-400" />
-            </div>
+            {/* Map toggle button - click the location icon to open map */}
+            <button
+              onClick={handleMapToggle}
+              disabled={geolocation.isLoading}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all focus-ring ${
+                showMap || geolocation.hasLocation
+                  ? 'bg-gradient-to-br from-sky-400 to-blue-500 shadow-sm'
+                  : 'bg-gradient-to-br from-pink-100 to-sky-100 hover:from-pink-200 hover:to-sky-200'
+              }`}
+              title="Show map"
+            >
+              {geolocation.isLoading ? (
+                <Loader2 className={`w-5 h-5 animate-spin ${showMap || geolocation.hasLocation ? 'text-white' : 'text-pink-400'}`} />
+              ) : (
+                <MapPin className={`w-5 h-5 ${showMap || geolocation.hasLocation ? 'text-white' : 'text-pink-400'}`} />
+              )}
+            </button>
             <div className="flex-1 min-w-0">
               <h2 className="font-medium text-stone-800 truncate">{currentStop.name}</h2>
               <div className="flex items-center gap-2">
@@ -220,24 +234,6 @@ function App() {
                 )}
               </div>
             </div>
-            
-            {/* Map toggle button */}
-            <button
-              onClick={handleMapToggle}
-              disabled={geolocation.isLoading}
-              className={`p-2.5 rounded-xl transition-all focus-ring ${
-                showMap || geolocation.hasLocation
-                  ? 'bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-sm'
-                  : 'border border-stone-200 hover:bg-stone-50 hover:border-stone-300 text-stone-600'
-              }`}
-              title="Show map with nearby stops"
-            >
-              {geolocation.isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Navigation className="w-4 h-4" />
-              )}
-            </button>
           </div>
           
           {/* Location error message */}
